@@ -1,0 +1,31 @@
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elastic
+  labels:
+    app: elasticomics
+    component: elasticsearchm
+    role: datam
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elasticomics
+      component: elasticsearchm
+      role: datam
+  template:
+    metadata:
+      labels:
+        app: elasticomics
+        component: elasticsearchm
+        role: datam
+    spec:
+      containers:
+      - name: elastic
+        image: blacktop/elasticsearch:5.6
+        command: ["/bin/sh"]
+        args: ["-c", "while true; do echo hello; sleep 10;done"]
+        ports:
+        - containerPort: 9200
+          name: elastic
