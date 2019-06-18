@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticservice
+  labels:
+    app: elasticomics
+    component: elasticsearchm
+    role: datam
+spec:
+  clusterIP: None
+  ports:
+  - port: 9300
+    name: transport
+    targetPort: 9376
+  - port: 9200
+    name: http
+    targetPort: 9378
+  selector:
+    component: elasticsearchm
+    role: datam 
+    app: elasticomics
