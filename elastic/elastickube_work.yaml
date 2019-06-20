@@ -13,7 +13,7 @@ spec:
   - port: 9200
     name: http
     targetPort: 9200
-  clusterIP: None
+  --type: NodePort
   selector:
     component: elasticsearch
     role: master
