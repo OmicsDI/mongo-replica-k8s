@@ -1,37 +1,66 @@
+kind: PersistentVolume
 apiVersion: v1
-kind: Service
 metadata:
-  name: elasticservice
+  name: task-pv-volume
   labels:
-    app: elasticomics
+    type: local
 spec:
-  ports:
-  - port: 9600
-    name: elastic
-  clusterIP: None
-  selector:
-    app: elasticomics
+  storageClassName: manual
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/home/gaur/elasticvol"
 ---
+
 apiVersion: apps/v1
-kind: StatefulSet
+kind: Deployment
 metadata:
   name: elastic
+  labels:
+    app: elasticomics
+    component: elasticsearchm
+    role: datam
 spec:
   serviceName: elasticservice
   replicas: 1
+  initContainers:
+   - name: increase-the-ulimit
+      image: busybox
+      command:
+      - sysctl
+      - -w
+      - vm.max_map_count=262144
+      securityContext:
+	privileged: false
+   - name: increase-the-vm-max-map-count
+      image: busybox
+      command:
+      - sh
+      - -c
+      - ulimit -n 65536
+      securityContext:
+	privileged: false
   selector:
     matchLabels:
       app: elasticomics
+      component: elasticsearchm
+      role: datam
   template:
     metadata:
       labels:
         app: elasticomics
+        component: elasticsearchm
+        role: datam
     spec:
       containers:
       - name: elastic
         image: blacktop/elasticsearch:5.6
+        command: ["/bin/sh"]
+        args: ["-c", "while false; do echo hello; sleep 10;done"]
         ports:
-        - containerPort: 9600
+        - containerPort: 9200
           name: elastic
         volumeMounts:
         - name: elasticvol
@@ -40,7 +69,9 @@ spec:
   - metadata:
       name: elasticvol
     spec:
+      storageClassName: local-ssd
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
           storage: 1Gi
+
