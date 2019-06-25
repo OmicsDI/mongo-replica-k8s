@@ -1,21 +1,44 @@
-kind: PersistentVolume
 apiVersion: v1
+kind: Service
 metadata:
-  name: task-pv-volume
+  name: elasticservice
   labels:
-    type: local
+    app: elasticomics
+    component: elasticsearchm
+    role: datam
 spec:
-  storageClassName: manual
-  capacity:
-    storage: 2Gi
-  accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: "/home/gaur/elasticvol"
+  ports:
+    - port: 30031
+      targetPort: 9200
+      name: httpportelastic
+    - port: 30032
+      targetPort: 9300
+      name: tcpelasticport
+  selector:
+    app: elasticomics
 ---
-
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticnodeservice
+  labels:
+    app: elasticomics
+spec:
+  type: NodePort
+  ports:
+    - port: 30031
+      targetPort: 9200
+      name: httpportelastic
+      nodePort : 30033
+    - port: 30032
+      targetPort: 9300
+      nodePort: 30034
+      name: tcpelasticport
+  selector:
+    app: elasticomics
+---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: elastic
   labels:
@@ -25,23 +48,6 @@ metadata:
 spec:
   serviceName: elasticservice
   replicas: 1
-  initContainers:
-   - name: increase-the-ulimit
-      image: busybox
-      command:
-      - sysctl
-      - -w
-      - vm.max_map_count=262144
-      securityContext:
-	privileged: false
-   - name: increase-the-vm-max-map-count
-      image: busybox
-      command:
-      - sh
-      - -c
-      - ulimit -n 65536
-      securityContext:
-	privileged: false
   selector:
     matchLabels:
       app: elasticomics
@@ -54,23 +60,48 @@ spec:
         component: elasticsearchm
         role: datam
     spec:
+      initContainers:
+      - name: install-curl
+        image: busybox:1.27.2
+        command:
+          - apt-get
+          - install
+          - curl
+        securityContext:
+          privileged: true
+      - name: increase-the-max-map-count
+        image: busybox:1.27.2
+        command:
+        - sysctl
+        - -w
+        - vm.max_map_count=262144
+        securityContext:
+          privileged: true
+      - name: increase-ulimit-count
+        image: busybox:1.27.2
+        command:
+        - sh
+        - -c
+        - ulimit -n 65536
+        securityContext:
+          privileged: true
       containers:
       - name: elastic
         image: blacktop/elasticsearch:5.6
         command: ["/bin/sh"]
-        args: ["-c", "while false; do echo hello; sleep 10;done"]
+        args: ["-c", "while true; do echo hello; sleep 10;done"]
         ports:
-        - containerPort: 9200
-          name: elastic
+          - containerPort: 9200
+            name: elastic
         volumeMounts:
-        - name: elasticvol
-          mountPath: /home/gaur/elasticvol
+          - name: elasticvoldass
+            mountPath: /elasticvoldass
   volumeClaimTemplates:
   - metadata:
-      name: elasticvol
+      name: elasticvoldass
     spec:
-      storageClassName: local-ssd
-      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: nfs-client
+      accessModes: [ "ReadWriteMany" ]
       resources:
         requests:
           storage: 1Gi
