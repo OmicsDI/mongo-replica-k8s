@@ -62,11 +62,9 @@ spec:
     spec:
       initContainers:
       - name: install-curl
-        image: busybox:1.27.2
-        command:
-          - apt-get
-          - install
-          - curl
+        image: ubuntu:xenial
+        command: ["/bin/sh"]
+        args: ["-c", "apt install curl"]
         securityContext:
           privileged: true
       - name: increase-the-max-map-count
