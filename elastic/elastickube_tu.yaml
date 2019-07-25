@@ -37,17 +37,17 @@ spec:
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: task-pv-volume
+  name: task-pv-volumees
   labels:
-    type: local
+    type: nfs-volume
 spec:
-  storageClassName: local-storage
+  storageClassName: nfs
   capacity:
     storage: 4Gi
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "/mnt/data"
+    path: "/mnt/datael"
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -126,11 +126,12 @@ spec:
           periodSeconds: 10
         volumeMounts:
         - name: storage
-          mountPath: /data
+          mountPath: /datael
   volumeClaimTemplates:
   - metadata:
       name: storage
-    spec:      
+    spec:   
+      storageClassName: nfs-client   
       accessModes: [ ReadWriteOnce ]
       resources:
         requests:
