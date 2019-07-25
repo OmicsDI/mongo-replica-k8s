@@ -1,0 +1,55 @@
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+ name: mongo
+ namespace: mongons
+spec:
+ serviceName: "mongosvcqa"
+ replicas: 3
+ template:
+   metadata:
+     labels:
+       role: mongo
+       environment: qa
+   spec:
+     terminationGracePeriodSeconds: 10
+     volumes:
+       - name: mongokey
+         secret:
+           defaultMode: 0400
+           secretName: mongokey
+     containers:
+       - name: mongo
+         image: mongo
+         resources:
+           limits:
+             cpu: "0.3"
+           requests:
+             cpu: "0.1"
+         command:
+           - mongod
+           - "--replSet"
+           - rs0
+           - "--smallfiles"
+           - "--noprealloc"
+           - "--bind_ip"
+           - 0.0.0.0
+           - "--keyFile"
+           - "/etc/mongokey/keyfile"
+         ports:
+           - containerPort: 27017
+         volumeMounts:
+           - name: mongo-persistent-storage
+             mountPath: /data/db
+           - name: mongokey
+             mountPath: "/etc/mongokey"
+ volumeClaimTemplates:
+ - metadata:
+     name: mongo-persistent-storage
+     annotations:
+       volume.beta.kubernetes.io/storage-class: "mongoqa"
+   spec:
+     accessModes: [ "ReadWriteOnce" ]
+     resources:
+       requests:
+         storage: 10Gi
